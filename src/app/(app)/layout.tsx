@@ -1,10 +1,33 @@
 "use client";
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar';
 import { NoteList } from '@/components/note-list';
+import { useUser } from '@/firebase';
+import { useRouter } from 'next/navigation';
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
+  const { user, loading } = useUser();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!loading && !user) {
+      router.push('/login');
+    }
+  }, [user, loading, router]);
+  
+  if (loading) {
+    return (
+      <div className="flex h-screen w-screen items-center justify-center">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+      </div>
+    );
+  }
+
+  if (!user) {
+    return null;
+  }
+  
   return (
     <SidebarProvider>
       <div className="flex min-h-screen bg-background">

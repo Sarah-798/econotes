@@ -1,0 +1,38 @@
+/**
+ * @fileoverview This file exports all of the Firebase-related functionality.
+ */
+import {
+  type FirebaseApp,
+  type FirebaseOptions,
+  initializeApp,
+} from 'firebase/app';
+import { Auth, getAuth } from 'firebase/auth';
+import { Firestore, getFirestore } from 'firebase/firestore';
+
+export { FirebaseProvider, useFirebase } from './provider';
+export { FirebaseClientProvider } from './client-provider';
+export { useCollection } from './firestore/use-collection';
+export { useDoc } from './firestore/use-doc';
+export { useUser } from './auth/use-user';
+export { useFirebaseApp, useFirestore, useAuth } from './provider';
+
+let app: FirebaseApp | undefined;
+let firestore: Firestore | undefined;
+let auth: Auth | undefined;
+
+/**
+ * Initializes the Firebase app and returns the app, firestore, and auth instances.
+ * @param options The Firebase options.
+ * @returns The Firebase app, firestore, and auth instances.
+ */
+export function initializeFirebase(options: FirebaseOptions) {
+  if (app) {
+    console.warn('Firebase app already initialized');
+  } else {
+    app = initializeApp(options);
+    firestore = getFirestore(app);
+    auth = getAuth(app);
+  }
+
+  return { app, firestore, auth };
+}
