@@ -10,7 +10,7 @@ import {
 import { FirebaseApp } from 'firebase/app';
 import { Auth } from 'firebase/auth';
 import { Firestore } from 'firebase/firestore';
-import { UserProvider } from './auth/use-user';
+import { UserProvider } from './user-provider';
 
 interface FirebaseContextType {
   app: FirebaseApp | null;

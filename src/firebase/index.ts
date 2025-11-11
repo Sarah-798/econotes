@@ -10,12 +10,11 @@ import {
 import { Auth, getAuth } from 'firebase/auth';
 import { Firestore, getFirestore } from 'firebase/firestore';
 
-export { FirebaseProvider, useFirebase } from './provider';
-export { FirebaseClientProvider } from './client-provider';
+// ✅ Correct exports — removed old ./provider imports
+export { FirebaseClientProvider, useFirebase, useFirestore, useAuth } from './client-provider';
 export { useCollection } from './firestore/use-collection';
 export { useDoc } from './firestore/use-doc';
-export { useUser } from './auth/use-user';
-export { useFirebaseApp, useFirestore, useAuth } from './provider';
+export { useUser, UserProvider } from './user-provider';
 
 let app: FirebaseApp | undefined;
 let firestore: Firestore | undefined;

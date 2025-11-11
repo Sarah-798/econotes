@@ -1,15 +1,8 @@
-'use client';
+"use client";
 
-import { Auth, onAuthStateChanged, User } from 'firebase/auth';
-import {
-  createContext,
-  useContext,
-  useEffect,
-  useState,
-  ReactNode,
-} from 'react';
-
-import { useAuth } from '@/firebase/provider';
+import { ReactNode, createContext, useContext, useEffect, useState } from "react";
+import { onAuthStateChanged, User } from "firebase/auth";
+import { useAuth } from "@/firebase/client-provider";
 
 interface UserContextType {
   user: User | null;
@@ -25,26 +18,19 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    let unsubscribe: () => void;
-    if (auth) {
-      unsubscribe = onAuthStateChanged(auth, (user) => {
-        setUser(user);
-        setLoading(false);
-      });
-    } else {
+    if (!auth) {
       setLoading(false);
+      return;
     }
-    return () => {
-      if (unsubscribe) {
-        unsubscribe();
-      }
-    };
+    const unsub = onAuthStateChanged(auth, (u) => {
+      setUser(u);
+      setLoading(false);
+    });
+    return () => unsub();
   }, [auth]);
 
   const signOut = async () => {
-    if (auth) {
-      await auth.signOut();
-    }
+    if (auth) await auth.signOut();
   };
 
   return (
@@ -57,7 +43,7 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
 export const useUser = () => {
   const context = useContext(UserContext);
   if (context === undefined) {
-    throw new Error('useUser must be used within a UserProvider');
+    throw new Error("useUser must be used within a UserProvider");
   }
   return context;
 };
