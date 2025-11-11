@@ -5,10 +5,19 @@ import { useAuth } from "@/firebase";
 import { GoogleAuthProvider, signInWithPopup } from "firebase/auth";
 import { useRouter } from "next/navigation";
 import { Leaf } from "lucide-react";
+import { useEffect } from "react";
+import { useUser } from "@/firebase";
 
 export default function LoginPage() {
   const auth = useAuth();
+  const { user, loading } = useUser();
   const router = useRouter();
+
+  useEffect(() => {
+    if (!loading && user) {
+      router.push('/dashboard');
+    }
+  }, [user, loading, router]);
 
   const handleGoogleSignIn = async () => {
     if (!auth) return;

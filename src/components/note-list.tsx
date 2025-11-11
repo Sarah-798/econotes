@@ -1,10 +1,9 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { useRouter, usePathname } from 'next/navigation';
-import { collection, onSnapshot, addDoc, deleteDoc, doc, serverTimestamp, query, orderBy, where } from 'firebase/firestore';
-import { useUser } from '@/firebase'; // Assuming useUser hook
-import { db } from '@/lib/firebase';
+import { collection, addDoc, deleteDoc, doc, serverTimestamp, query, orderBy, where } from 'firebase/firestore';
+import { useUser, useFirestore, useCollection } from '@/firebase';
 import type { Note } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import {
@@ -24,51 +23,28 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from './ui/dropdown-menu';
 import { useToast } from '@/hooks/use-toast';
+import { useMemo } from 'react';
 
 export function NoteList() {
-  const [notes, setNotes] = useState<Note[]>([]);
-  const [loading, setLoading] = useState(true);
   const { user, signOut } = useUser();
+  const firestore = useFirestore();
   const router = useRouter();
   const pathname = usePathname();
   const { toast } = useToast();
 
-  useEffect(() => {
-    if (user?.uid) {
-      setLoading(true);
-      const q = query(
-        collection(db, 'notes'), 
-        where('uid', '==', user.uid), 
-        orderBy('createdAt', 'desc')
-      );
-      const unsubscribe = onSnapshot(q, (querySnapshot) => {
-        const notesData: Note[] = [];
-        querySnapshot.forEach((doc) => {
-          notesData.push({ id: doc.id, ...doc.data() } as Note);
-        });
-        setNotes(notesData);
-        setLoading(false);
-      }, (error) => {
-        console.error("Error fetching notes:", error);
-        toast({
-          title: "Error",
-          description: "Could not fetch notes.",
-          variant: "destructive"
-        })
-        setLoading(false);
-      });
-      return () => unsubscribe();
-    } else if (!user && !loading) {
-       // if user is null and we are not in initial loading state
-      router.push('/login');
-    } else {
-      setNotes([]);
-      setLoading(false);
-    }
-  }, [user, loading, router, toast]);
+  const notesQuery = useMemo(() => {
+    if (!user || !firestore) return null;
+    return query(
+      collection(firestore, 'notes'),
+      where('uid', '==', user.uid),
+      orderBy('createdAt', 'desc')
+    );
+  }, [user, firestore]);
+
+  const { data: notes, loading } = useCollection<Note>(notesQuery);
 
   const createNewNote = async () => {
-    if (!user) {
+    if (!user || !firestore) {
       toast({
         title: "Authentication required",
         description: "You need to be logged in to create a note.",
@@ -78,7 +54,7 @@ export function NoteList() {
       return;
     }
     try {
-      const newNoteRef = await addDoc(collection(db, 'notes'), {
+      const newNoteRef = await addDoc(collection(firestore, 'notes'), {
         uid: user.uid,
         title: 'Untitled Note',
         content: '',
@@ -97,8 +73,9 @@ export function NoteList() {
   };
 
   const handleDelete = async (noteId: string) => {
+    if (!firestore) return;
     try {
-      await deleteDoc(doc(db, 'notes', noteId));
+      await deleteDoc(doc(firestore, 'notes', noteId));
       if (pathname === `/notes/${noteId}`) {
         router.push('/dashboard');
       }
@@ -184,7 +161,7 @@ export function NoteList() {
       </SidebarHeader>
       <SidebarContent asChild>
         <ScrollArea>
-          {loading && !user ? (
+          {loading ? (
             <div className="p-2 space-y-2">
               <SidebarMenuSkeleton showIcon />
               <SidebarMenuSkeleton showIcon />
@@ -205,7 +182,7 @@ export function NoteList() {
                   Dashboard
                 </SidebarMenuButton>
               </SidebarMenuItem>
-              {notes.map((note) => (
+              {notes && notes.map((note) => (
                 <SidebarMenuItem key={note.id}>
                   <SidebarMenuButton
                     onClick={() => router.push(`/notes/${note.id}`)}
@@ -242,7 +219,7 @@ export function NoteList() {
       <SidebarFooter className="border-t border-sidebar-border p-4">
         <div className="flex items-center gap-2 text-sm font-medium text-sidebar-foreground/80">
           <BookOpen className="h-5 w-5 text-primary"/>
-          <span>{user ? `${notes.length} Pages Saved` : 'Log in to save pages'}</span>
+          <span>{user && notes ? `${notes.length} Pages Saved` : 'Log in to save pages'}</span>
         </div>
       </SidebarFooter>
     </Sidebar>

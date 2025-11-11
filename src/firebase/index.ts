@@ -5,6 +5,7 @@ import {
   type FirebaseApp,
   type FirebaseOptions,
   initializeApp,
+  getApps,
 } from 'firebase/app';
 import { Auth, getAuth } from 'firebase/auth';
 import { Firestore, getFirestore } from 'firebase/firestore';
@@ -26,9 +27,7 @@ let auth: Auth | undefined;
  * @returns The Firebase app, firestore, and auth instances.
  */
 export function initializeFirebase(options: FirebaseOptions) {
-  if (app) {
-    console.warn('Firebase app already initialized');
-  } else {
+  if (getApps().length === 0) {
     app = initializeApp(options);
     firestore = getFirestore(app);
     auth = getAuth(app);

@@ -1,8 +1,7 @@
 "use client";
 
-import React, { useState, useEffect, useCallback, useTransition } from 'react';
+import React, { useState, useEffect, useCallback, useTransition, useMemo } from 'react';
 import { doc, onSnapshot, updateDoc, serverTimestamp } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
 import type { Note } from '@/lib/types';
 import { useDebounce } from '@/lib/hooks';
 import { Textarea } from '@/components/ui/textarea';
@@ -20,16 +19,24 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { useDoc, useFirestore } from '@/firebase';
 
 interface NoteEditorProps {
   noteId: string;
 }
 
 export function NoteEditor({ noteId }: NoteEditorProps) {
-  const [note, setNote] = useState<Note | null>(null);
+  const firestore = useFirestore();
+  
+  const noteRef = useMemo(() => {
+    if (!firestore || !noteId) return null;
+    return doc(firestore, "notes", noteId);
+  }, [firestore, noteId]);
+
+  const { data: note, loading: noteLoading } = useDoc<Note>(noteRef);
+
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
-  const [loading, setLoading] = useState(true);
   const [isListening, setIsListening] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [isAiSummarizing, startAiSummaryTransition] = useTransition();
@@ -40,28 +47,16 @@ export function NoteEditor({ noteId }: NoteEditorProps) {
   const { toast } = useToast();
 
   useEffect(() => {
-    if (!noteId) return;
-    setLoading(true);
-    const unsub = onSnapshot(doc(db, "notes", noteId), (doc) => {
-      if (doc.exists()) {
-        const noteData = { id: doc.id, ...doc.data() } as Note;
-        setNote(noteData);
-        setTitle(noteData.title);
-        setContent(noteData.content);
-      } else {
-        // Handle case where note is not found, maybe redirect or show message
-        toast({ title: "Error", description: "Note not found.", variant: "destructive" });
-      }
-      setLoading(false);
-    });
-    return () => unsub();
-  }, [noteId, toast]);
+    if (note) {
+      setTitle(note.title);
+      setContent(note.content);
+    }
+  }, [note]);
 
   const updateNoteInDb = useCallback(async (data: { title?: string; content?: string; latitude?: number | null; longitude?: number | null }) => {
-    if (!noteId) return;
-    const noteRef = doc(db, 'notes', noteId);
+    if (!noteRef) return;
     await updateDoc(noteRef, { ...data, updatedAt: serverTimestamp() });
-  }, [noteId]);
+  }, [noteRef]);
 
   useEffect(() => {
     if (note && debouncedTitle !== note.title) {
@@ -93,18 +88,15 @@ export function NoteEditor({ noteId }: NoteEditorProps) {
     };
 
     recognition.onresult = (event) => {
-      let interimTranscript = '';
       let finalTranscript = '';
       for (let i = event.resultIndex; i < event.results.length; ++i) {
         if (event.results[i].isFinal) {
           finalTranscript += event.results[i][0].transcript;
-        } else {
-          interimTranscript += event.results[i][0].transcript;
         }
       }
       setContent(prev => prev + finalTranscript);
     };
-
+    
     if (isListening) {
       recognition.stop();
     } else {
@@ -185,7 +177,7 @@ export function NoteEditor({ noteId }: NoteEditorProps) {
   };
 
 
-  if (loading) {
+  if (noteLoading) {
     return (
       <div className="p-4 flex items-center justify-center h-full">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -222,8 +214,8 @@ export function NoteEditor({ noteId }: NoteEditorProps) {
         <div className="mt-4 flex flex-wrap items-center gap-2 border-t pt-4">
           <Tooltip>
             <TooltipTrigger asChild>
-              <Button variant="outline" size="icon" onClick={handleSpeechToText}>
-                {isListening ? <StopCircle className="text-destructive" /> : <Mic />}
+              <Button variant="outline" size="icon" onClick={handleSpeechToText} >
+                <Mic className={isListening ? 'text-destructive' : ''}/>
               </Button>
             </TooltipTrigger>
             <TooltipContent><p>{isListening ? 'Stop Listening' : 'Start Speech-to-Text'}</p></TooltipContent>

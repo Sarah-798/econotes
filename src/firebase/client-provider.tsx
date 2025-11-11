@@ -7,6 +7,7 @@ import { Firestore } from 'firebase/firestore';
 
 import { initializeFirebase } from './index';
 import { FirebaseProvider } from './provider';
+import { Loader2 } from 'lucide-react';
 
 interface FirebaseClientProviderProps {
   children: ReactNode;
@@ -29,7 +30,11 @@ export function FirebaseClientProvider({
   }, [options]);
 
   if (!firebase?.app) {
-    return <div>Loading Firebase...</div>;
+    return (
+       <div className="flex h-screen w-screen items-center justify-center">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+      </div>
+    );
   }
 
   return (
