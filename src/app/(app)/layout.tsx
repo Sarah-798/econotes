@@ -32,7 +32,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     <SidebarProvider>
       <div className="flex min-h-screen bg-background">
         <NoteList />
-        <SidebarInset className="bg-background">
+        <SidebarInset>
           {children}
         </SidebarInset>
       </div>
