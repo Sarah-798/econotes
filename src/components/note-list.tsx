@@ -18,7 +18,7 @@ import {
   SidebarMenuSkeleton,
 } from '@/components/ui/sidebar';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Leaf, Plus, Trash2, BookOpen } from 'lucide-react';
+import { Leaf, Plus, Trash2, BookOpen, LayoutDashboard } from 'lucide-react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 
 export function NoteList() {
@@ -88,6 +88,15 @@ export function NoteList() {
             </div>
           ) : (
             <SidebarMenu>
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  onClick={() => router.push('/dashboard')}
+                  isActive={pathname === '/dashboard'}
+                >
+                  <LayoutDashboard />
+                  Dashboard
+                </SidebarMenuButton>
+              </SidebarMenuItem>
               {notes.map((note) => (
                 <SidebarMenuItem key={note.id}>
                   <SidebarMenuButton
